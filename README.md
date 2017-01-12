@@ -24,7 +24,7 @@ Each time `-RF1` iterates, it randomly generates 20 sets of parameters (from a n
 
 This approach has shown some promise. More stable ecosystems are produced after several hundred iterations. However, the improvement levels off around 1000 iterations, as it is still tied to the distributions centered on the original hard coded parameters. Development is under way to automatically optimize these every hundred iterations or so in attempt to create a perpetually stabilizing universe. Wish us luck...
 
-# Parameters
+### Parameters
 Each new critter is generated with some small random variation (encoded in the `bigValley...` file) centered on the hard-coded parameter for that critter. Then, when critters reproduce, the variation of the new critter is centered on the value of it's parent. This creates some degree of "inheritance" or "evolution" as the world ages.
 
 **Energy** is the starting energy for that critter
