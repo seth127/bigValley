@@ -27,9 +27,9 @@ This approach has shown some promise. More stable ecosystems are produced after 
 ### Parameters
 Each new critter is generated with some small random variation (encoded in the `bigValley...` file) centered on the hard-coded parameter for that critter. Then, when critters reproduce, the variation of the new critter is centered on the value of it's parent. This creates some degree of "inheritance" or "evolution" as the world ages.
 
-**Energy** is the starting energy for that critter
-**Repro** is the threshold of energy that must be reached for that critter to reproduce
-**Fatigue** is the amount of energy that critter loses each turn it moves (without eating)
+**Energy** is the starting energy for that critter. 
+**Repro** is the threshold of energy that must be reached for that critter to reproduce. 
+**Fatigue** is the amount of energy that critter loses each turn it moves (without eating). 
 
 *Note:* Grass and debris don't have meaningful fatigue values because they don't move. They gain a little energy each turn until they reproduce or, in the case of grass, get eaten.
 
