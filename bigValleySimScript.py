@@ -12,17 +12,14 @@ from bvSim import *
 ######
 ## SET PARAMETERS
 
-# number of tests for each epoch (these are averaged together before saving as a single line)
-##you can turn on saving at the end of testLife() to save a separate .csv with each run in it
-t = int(sys.argv[1]) # default is 3
 #max number of years for each epoch
-y = int(sys.argv[2]) # default is 500
+y = int(sys.argv[1]) # default is 500
 
 # number of epochs to run
-reps = int(sys.argv[3]) # default is 5
+reps = int(sys.argv[2]) # default is 5
 
 # show plots each turn
-plot = (sys.argv[4] == 'plot') # if you don't want to plot, just put 'no' as argv[4]
+plot = (sys.argv[3] == 'plot') # if you don't want to plot, just put 'no' as argv[4]
 
 
 #wolf stats
@@ -46,7 +43,7 @@ dn = 10
 
 for i in range(0, reps):
     #define test parameters
-    tests = t
+    tests = 1
     years = y
 
     #define your life forms
