@@ -5,15 +5,15 @@ created by Seth Green, based on an exercise in Eloquent Javascript by Marijn Hav
 
 Big Valley is a little simulated ecosystem with three kinds of critters: grass, rabbits, and wolves. Grass grows on debris, and then is eaten by rabbits. Rabbits, in turn, are eaten by wolves. As each year passes, each critter does one of three things:
 
-    1. reproduces, if she has enough energy
-    2. eats food, if it's next to her, increasing her energy
-    3. moves, if there's no food next to her, decreasing her energy
+1. reproduces, if she has enough energy
+2. eats food, if it's next to her, increasing her energy
+3. moves, if there's no food next to her, decreasing her energy
 
 Running `bigValleySimScript.py` will run simulations of the world, for your viewing pleasure. By default, the world runs until either rabbits or wolves go extinct, and then restarts. It takes three arguments:
 
-    1. the max number of years to run before restarting (if there has not been an extinction)
-    2. the number of times to restart the world before quitting the program
-    3. whether or not to show a plot visualizing each year (`plot` for showing or `no` for only printing text output)
+1. the max number of years to run before restarting (if there has not been an extinction)
+2. the number of times to restart the world before quitting the program
+3. whether or not to show a plot visualizing each year (`plot` for showing or `no` for only printing text output)
 
 A quick starting default to try is `python bigValleySimScript.py 100 3 plot`
 
