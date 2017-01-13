@@ -15,7 +15,7 @@ Running `bigValleySimScript.py` will run simulations of the world, for your view
 2. the number of times to restart the world before quitting the program
 3. whether or not to show a plot visualizing each year (`plot` for showing or `no` for only printing text output)
 
-A quick starting default to try is `python bigValleySimScript.py 100 3 plot`
+A quick starting default is `python bigValleySimScript.py 100 3 plot`
 
 The parameters which determine the fate of your critters and your world are set in the `bigValleySimScript.py` file. These parameters are discussed below. You can open it and manually change them to attempt to make your ecosystem more stable. Or...
 
