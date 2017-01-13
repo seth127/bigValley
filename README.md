@@ -4,14 +4,14 @@
 created by Seth Green, based on an exercise in Eloquent Javascript by Marijn Haverbeke
 
 Big Valley is a little simulated ecosystem with three kinds of critters: grass, rabbits, and wolves. Grass grows on debris, and then is eaten by rabbits. Rabbits, in turn, are eaten by wolves. As each year passes, each critter does one of three things:
-    1) reproduces, if she has enough energy
-    2) eats food, if it's next to her, increasing her energy
-    3) moves, if there's no food next to her, decreasing her energy
+    1. reproduces, if she has enough energy
+    2. eats food, if it's next to her, increasing her energy
+    3. moves, if there's no food next to her, decreasing her energy
 
 Running `bigValleySimScript.py` will run simulations of the world, for your viewing pleasure. By default, the world runs until either rabbits or wolves go extinct, and then restarts. It takes three arguments:
-    1) the max number of years to run before restarting (if there has not been an extinction)
-    2) the number of times to restart the world before quitting the program
-    3) whether or not to show a plot visualizing each year ('plot' for showing or 'no' for only printing text output)
+    1. the max number of years to run before restarting (if there has not been an extinction)
+    2. the number of times to restart the world before quitting the program
+    3. whether or not to show a plot visualizing each year (`plot` for showing or `no` for only printing text output)
 
 A quick starting default to try is `python bigValleySimScript.py 100 3 plot`
 
@@ -20,9 +20,9 @@ The parameters which determine the fate of your critters and your world are set 
 ### Learning
 The real point of this exercise is to design a process whereby the world could itself learn the ideal parameters which would lead to the most stable ecosystem. A first attempt at this is contained in 'bigValleySimLearning-RF1.py`. 
 
-Each time `-RF1` iterates, it randomly generates 20 sets of parameters (from a normal distribution, centered on the starting parameters that are hard coded). It then builds a Random Forest model on *all* past runs (saved in the `...-SIMS-RF1.csv` file corresponding to your input parameters) and from that attempts to predict which of the 20 parameter sets will result in the most stable ecosystem. It then simulates the world with those parameters and logs the results in the `SIMS` file for use in future iterations.
+Each time `...-RF1.py` iterates, it randomly generates 20 sets of parameters (from a normal distribution, centered on the starting parameters that are hard coded). It then builds a Random Forest model on *all* past runs (saved in the `...-SIMS-RF1.csv` file corresponding to your input parameters) and then uses the model to predict which of the 20 parameter sets will result in the most stable ecosystem. It then simulates the world with those parameters and logs the results in the `...SIMS.csv` file for use in future iterations.
 
-This approach has shown some promise. More stable ecosystems are produced after several hundred iterations. However, the improvement levels off around 1000 iterations, as it is still tied to the distributions centered on the original hard coded parameters. Development is under way to automatically optimize these every hundred iterations or so in attempt to create a perpetually stabilizing universe. Wish us luck...
+This approach has shown some promise. More stable ecosystems are produced after several hundred iterations. However, the improvement levels off around 1000 iterations, as it is still tied to the distributions centered on the original hard coded parameters. Development is under way to automatically optimize these every hundred iterations or so in attempt to create a perpetually stabilizing universe. 
 
 ### Parameters
 Each new critter is generated with some small random variation (encoded in the `bigValley...` file) centered on the hard-coded parameter for that critter. Then, when critters reproduce, the variation of the new critter is centered on the value of it's parent. This creates some degree of "inheritance" or "evolution" as the world ages.
@@ -34,7 +34,7 @@ Each new critter is generated with some small random variation (encoded in the `
 *Note:* Grass and debris don't have meaningful fatigue values because they don't move. They gain a little energy each turn until they reproduce or, in the case of grass, get eaten.
 
 ### Customize
-For those adventurous souls, feel free to open up the bvLife.py and create some creatures of your own. A ruminant who gets double energy from each plant eaten? A super predator to thin out the wolf pack? A carniverous plant that eats low-energy foragers? All part of the game...
+For those adventurous souls, feel free to open `bvLife.py` and create some creatures of your own. A ruminant who gets double energy from each plant eaten? A super predator to thin out the wolf pack? A carniverous plant that eats low-energy foragers? All fair game...
 
 #brief documentation:
 
