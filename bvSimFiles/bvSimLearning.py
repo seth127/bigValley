@@ -11,6 +11,8 @@ import string
 import random
 
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -41,6 +43,120 @@ xList = ['wolfEn',
           'grassNum',
           'debrisNum']
 
+def learnParamsRF(optsNum,
+          file_name,
+          wolfEn,
+          wolfRe,
+          wolfFa,
+          rabbitEn,
+          rabbitRe,
+          rabbitFa,
+          wolfNum,
+          rabbitNum,
+          grassNum,
+          debrisNum,
+          xList,
+          yList,
+          simCols):
+    # get the latest sim data
+    simDF = pd.read_csv(file_name, header = None, names = simCols)
+    # check if we've reached successful stasis (10 in a row that hit 500)
+    if min(simDF.iloc[-10:]['deadWorld']) == 500:
+        return ['END', simDF.shape[0]]
+
+    # train the model
+    rfModel=RandomForestRegressor(n_estimators=300,
+                            max_depth=None, 
+                            max_features=.8,
+                            min_samples_split=1,
+                            #random_state=0,
+                            n_jobs=-1)
+
+    rfModel.fit(simDF[xList], np.array(simDF[yList]).ravel())
+
+    # get options
+    xs = []
+    for i in range(0,optsNum):
+        we = int(wolfEn + (np.random.randn(1)[0] * 10))
+        wr = int(wolfRe + (np.random.randn(1)[0] * 15))
+        if wr < we * 1.1:
+            wr = we * 1.1
+        wf = max(int(wolfFa + (np.random.randn(1)[0] * 5)), 5) # minimum of 5
+
+        re = int(rabbitEn + (np.random.randn(1)[0] * 10))
+        rr = int(rabbitRe + (np.random.randn(1)[0] * 10))
+        if rr < re * 1.1:
+            rr = re * 1.1
+        rf = max(int(rabbitFa + (np.random.randn(1)[0] * 5)), 5) # minimum of 5
+
+        # minumum of 1 for each of these
+        wn = max(int(wolfNum + (np.random.randn(1)[0] * 3)), 1)
+        rn = max(int(rabbitNum + (np.random.randn(1)[0] * 5)), 1)
+        gn = max(int(grassNum + (np.random.randn(1)[0] * 10)), 1)
+        dn = max(int(debrisNum + (np.random.randn(1)[0] * 10)), 1)
+        xs.append([we, wr, wf, re, rr, rf, wn, rn, gn, dn])
+
+    optsDF = pd.DataFrame(xs, columns = xList)
+
+    # predict the best of the options
+    optsDF['preds'] = rfModel.predict(optsDF)
+    winner = optsDF[optsDF.preds == max(optsDF.preds)]
+
+    # returns the parameter values for the best option (as well as the predicted firstExt)
+    return winner
+
+
+def learnParamsLM(file_name,
+          wolfEn,
+          wolfRe,
+          wolfFa,
+          rabbitEn,
+          rabbitRe,
+          rabbitFa,
+          wolfNum,
+          rabbitNum,
+          grassNum,
+          debrisNum,
+          xList,
+          yList,
+          simCols, incremental = True):
+    # get the latest sim data
+    simDF = pd.read_csv(file_name, header = None, names = simCols)
+    # check if we've reached successful stasis (10 in a row that hit 500)
+    if min(simDF.iloc[-10:]['deadWorld']) == 500:
+        return ['END', simDF.shape[0]]
+
+    # train the model
+    lm = LinearRegression().fit(simDF[xList], np.array(simDF[yList]).ravel())
+
+    # round coefficients to 1 or -1, or the nearest integer if |coef| > 1
+    def pushToInt(num):
+        if 0 < num <= 1:
+            return int(1)
+        elif 0 > num >= -1:
+            return int(-1)
+        else:
+            return int(round(num, 0))
+
+    def returnSign(num):
+        if 0 < num:
+            return int(1)
+        elif 0 > num :
+            return int(-1)
+        else:
+            return 0
+
+    if incremental == True:
+        # push to nearest int, multiply first six by 5
+        adjustments = [returnSign(x)*5 for x in lm.coef_[0:6]] + [returnSign(x) for x in lm.coef_[6:]]
+    else:
+        # for first six, multiply by 10
+        # for critter numbers just push to nearest int
+        adjustments = [int(x*10) for x in lm.coef_[0:6]] + [pushToInt(x) for x in lm.coef_[6:]]
+
+    # add this list to previous parameters to adjust each iteration
+    return adjustments
+
 def testLife(tests, 
         years, 
         wolfEn,
@@ -53,8 +169,9 @@ def testLife(tests,
         rabbitNum,
         grassNum,
         debrisNum,
-        endOnExtinction = False):
-    save_name = 'testData/individualEpochs/' + str(tests) + 'x' + str(years) + '-' + id_generator() + '.csv' 
+        endOnExtinction = True,
+        endOnOverflow = True,
+        saveYearStats = False):
     testStats = []
     for i in range(0, tests):
         #create an instance of World 
@@ -76,13 +193,16 @@ def testLife(tests,
         populate(bigValley, 'debris', debrisNum)
         
         #now run the test
-        test = bigValley.silentTime(years, yearlyPrinting = True, endOnExtinction = endOnExtinction)
+        test = bigValley.silentTime(years, 
+            yearlyPrinting = True, 
+            endOnExtinction = endOnExtinction, 
+            endOnOverflow = endOnOverflow,
+            saveYearStats = saveYearStats)
         testStats.append(test)
         print('testStats ' + str(i) + ' ::: ' + str(testStats))
         
-        # save each epoch to a csv (instead of the average of each test)
+        # return stats for each test
         testDF = pd.DataFrame(testStats, columns=['firstExt', 'deadWorld', 'id'])
-        #testDF.to_csv(save_name, index=False) # saves a csv for each epoch
 
     #return testStats
     print(testDF)
@@ -99,20 +219,6 @@ def file_len(fname):
     	#return i + 1
     	print(str(fname) + ' is now ' + str(i + 1) + ' lines long.')
 '''
- 
-def loadSimData(file_name):
-    cols = ['tests','years','firstExt', 'firstExtSTD', 'deadWorld', 'deadWorldSTD', 'id',
-          'wolfEn',
-          'wolfRe',
-          'wolfFa',
-          'rabbitEn',
-          'rabbitRe',
-          'rabbitFa',
-          'wolfNum',
-          'rabbitNum',
-          'grassNum',
-          'debrisNum']
-    df = pd.read_csv('testData/1x500SIMS.csv', header = None, names = cols)
 
 def runSim(file_name,
           tests,
@@ -127,7 +233,9 @@ def runSim(file_name,
           rabbitNum,
           grassNum,
           debrisNum,
-          endOnExtinction=False):
+          endOnExtinction=True,
+          endOnOverflow=True,
+          saveYearStats=False):
     start=datetime.datetime.now()
     #file_name = 'data/' + str(tests) + 'x' + str(years) + '-' + id_generator() + '.csv' 
     testDF = testLife(tests, 
@@ -142,7 +250,9 @@ def runSim(file_name,
         rabbitNum,
         grassNum,
         debrisNum,
-        endOnExtinction)
+        endOnExtinction = endOnExtinction,
+        endOnOverflow = endOnOverflow,
+        saveYearStats = saveYearStats)
     thisSim = [
         tests,
         years,
@@ -190,52 +300,34 @@ def runSimLearningRF1(file_name,
           rabbitNum,
           grassNum,
           debrisNum,
-          endOnExtinction=False, optsNum=20):
+          optsNum=25,
+          endOnExtinction=True,
+          endOnOverflow=True,
+          saveYearStats=False):
     start=datetime.datetime.now()
     #file_name = 'data/' + str(tests) + 'x' + str(years) + '-' + id_generator() + '.csv' 
     
     ####### DO THE LEARNING
 
-    # get the latest sim data
-    simDF = pd.read_csv(file_name, header = None, names = simCols)
+    winner = learnParamsRF(optsNum,
+          file_name,
+          wolfEn,
+          wolfRe,
+          wolfFa,
+          rabbitEn,
+          rabbitRe,
+          rabbitFa,
+          wolfNum,
+          rabbitNum,
+          grassNum,
+          debrisNum,
+          xList,
+          yList,
+          simCols)
 
-    # train the model
-    rfModel=RandomForestRegressor(n_estimators=300,
-                            max_depth=None, 
-                            max_features=.8,
-                            min_samples_split=1,
-                            #random_state=0,
-                            n_jobs=-1)
-
-    rfModel.fit(simDF[xList], np.array(simDF[yList]).ravel())
-
-    # get options
-    xs = []
-    for i in range(0,optsNum):
-        we = int(wolfEn + (np.random.randn(1)[0] * 10))
-        wr = int(wolfRe + (np.random.randn(1)[0] * 15))
-        if wr < we * 1.1:
-            wr = we * 1.1
-        wf = max(int(wolfFa + (np.random.randn(1)[0] * 5)), 5) # minimum of 5
-
-        re = int(rabbitEn + (np.random.randn(1)[0] * 10))
-        rr = int(rabbitRe + (np.random.randn(1)[0] * 10))
-        if rr < re * 1.1:
-            rr = re * 1.1
-        rf = max(int(rabbitFa + (np.random.randn(1)[0] * 5)), 5) # minimum of 5
-
-        # minumum of 1 for each of these
-        wn = max(int(wolfNum + (np.random.randn(1)[0] * 3)), 1)
-        rn = max(int(rabbitNum + (np.random.randn(1)[0] * 5)), 1)
-        gn = max(int(grassNum + (np.random.randn(1)[0] * 10)), 1)
-        dn = max(int(debrisNum + (np.random.randn(1)[0] * 10)), 1)
-        xs.append([we, wr, wf, re, rr, rf, wn, rn, gn, dn])
-
-    optsDF = pd.DataFrame(xs, columns = xList)
-
-    # predict the best of the options
-    optsDF['preds'] = rfModel.predict(optsDF)
-    winner = optsDF[optsDF.preds == max(optsDF.preds)]
+    # if we've reached successful stasis (10 in a row that hit 500)
+    if isinstance(winner, (list)):
+        return winner
 
     ####### RUN THE SIM
 
@@ -251,7 +343,9 @@ def runSimLearningRF1(file_name,
         int(winner['rabbitNum']),
         int(winner['grassNum']),
         int(winner['debrisNum']),
-        endOnExtinction)
+        endOnExtinction = endOnExtinction,
+        endOnOverflow = endOnOverflow,
+        saveYearStats = saveYearStats)
     thisSim = [
         tests,
         years,
@@ -285,5 +379,6 @@ def runSimLearningRF1(file_name,
     file.close()
     print(datetime.datetime.now()-start)
     print('%%%%%%%%')
+    return 'finished thisSim'
 
 

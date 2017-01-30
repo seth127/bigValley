@@ -29,7 +29,7 @@ class World:
         self.id = id_generator()
         print(self.id)
 
-        self.yearStats = []
+        #self.yearStats = []
         self.paramStats = []
         self.crakeStats = [1,1, self.id]
 
@@ -84,7 +84,7 @@ class World:
 
     # gets parameter stats for each type of critter
     def getParamStats(self):
-        paramStats = []
+        paramStats = [self.year]
         for name in self.bookOfLife.keys():
             # skip if it's a Rock
             if self.bookOfLife[name].kingdom == 'Rock':
@@ -109,7 +109,7 @@ class World:
 
         # gets parameter stats for each type of critter
     def getParamCols(self):
-        paramCols = []
+        paramCols = ['Year']
         for name in self.bookOfLife.keys():
             # skip if it's a Rock
             if self.bookOfLife[name].kingdom == 'Rock':
@@ -125,11 +125,184 @@ class World:
     # FUNCTION TO ACTUALLY RUN THE WORLD ##
     #######################################
 
-    def silentTime(self, number, 
-        endOnExtinction = True, 
-        endOnOverflow = True, 
-        yearlyPrinting = True, 
-        saveYearStats = False):
+    def archivalTime(self, number, endOnExtinction = True):
+
+        # set the number of species in the world
+        biomeCount = len(set([critter[0] for critter in self.dict.values() if critter[1] != 'Plant']))
+        # set the boolean for the first extinction
+        firstExt = False
+        # set the initial values of paramStats
+        self.paramCols = self.getParamCols()
+        self.paramStats.append(self.getParamStats())
+        # initialize plotting Data Frame
+        plotCols = ['year', 'lat', 'long', 'name', 'energy']
+        plotDF = pd.DataFrame()
+
+        for i in range(0, number):
+            self.year += 1
+
+            # keep track of critters that starve or get eaten
+            dead = []
+            # loop through each critter and let it act
+            critterkeys = [x for x in self.dict.keys()]
+            #for key in self.dict.keys():
+            for key in critterkeys:
+                # get critter stats
+                #critter = self.dict[key]
+                # load the critter for this key, skip ahead if he's already been eaten
+                try: 
+                    critter = self.dict[key]
+                except:
+                    continue
+
+                # get coordinates as integers
+                coords = [int(coord) for coord in key.split(',')]
+                #print(coords)
+
+                # call up the critter from the bookOfLife
+                # then feed its View to its act() method
+                action = self.bookOfLife[critter[0]].act(critter, View(self.dict, coords))
+                # action will be a dict with the following:
+                ## action['location'] = the coordinates in string form
+                ## action['act'] = the name of the action
+                ## action['energy'] = the change in energy resulting form the action
+
+                if action != None:
+                    # reproduce
+                    if action['act'] == 'repro':
+                        # if rock, make grass. otherwise reproduce
+                        if critter[1] == 'Rock':
+                            self.create('grass', location = action['location'])
+                        else:
+                            self.reproduce(critter, location = action['location'])
+                        #update with new stats
+                        #self.df.loc[index, 'energy'] = int(row['energy']) + int(action['energy'])
+                        self.dict[key][3] = self.dict[key][3] + action['energy']
+                    # delete anything that it's about to eat
+                    elif action['act'] == 'eat':
+                        # copy the critter that's about to be eaten
+                        chomp = self.dict[action['location']]
+                        #
+                        ######## print the animal before it has eaten
+                        #print(critter[0] + ' eats ' + chomp[0] + ' at ' + action['location'])
+                        #
+                        # copy critter to new location
+                        self.dict[action['location']] = critter
+                        # delete critter from old location
+                        #dead += [key]
+                        del self.dict[key]
+                        # add the energy for the eaten animal
+                        self.dict[action['location']][3] = self.dict[action['location']][3] + action['energy']
+                        #######print the animal after it has eaten
+                        #print(self.dict[action['location']])
+                    # 
+                    elif action['act'] == 'grow':
+                        self.dict[key][3] = self.dict[key][3] + action['energy']
+                    #
+                    #elif action['act'] == 'move':
+                    else:
+                        #update with new stats
+                        # copy critter to new location
+                        self.dict[action['location']] = critter
+                        # delete critter from old location
+                        del self.dict[key]
+                        # add the energy for the eaten animal
+                        self.dict[action['location']][3] = self.dict[action['location']][3] + action['energy']
+                        # if no more energy, kill
+                        if self.dict[action['location']][3] < 1:
+                            #dead.append(index)
+                            del self.dict[action['location']]
+                            #print(row['name'] + " starves.")
+
+            ############
+            # CHECKING END OF YEAR STATS
+            ############
+
+            # log paramStats
+            self.paramStats.append(self.getParamStats())
+
+            # SAVE THE SNAPSHOT FOR PLOTTING
+            thisYear = pd.DataFrame([[self.year] + [int(coord) for coord in x.split(',')] + [self.dict[x][0]] + [round(self.dict[x][3],1)] for x in self.dict.keys()], columns = plotCols)
+            plotDF = plotDF.append(thisYear)
+
+            #alert us if there's an extinction and log it in crakeStats
+            if firstExt == False:
+                if biomeCount != len(set([critter[0] for critter in self.dict.values() if critter[1] != 'Plant'])):
+                    print('AN EXTINCTION!')
+                    self.crakeStats[0] = self.year
+                #reset it so that it doesn't keep tripping the conditional
+                    firstExt = True
+                    # if set to end the world at first extinction, then end it
+                    if endOnExtinction == True:
+                        break
+
+            #####################################################
+            # IF AN ENDING CRITERIA IS SATISFIED, END THE WORLD #
+            #####################################################
+                # 1) no critters left
+                # 2) more than 10,000 critters (just gets slow, so we end it)
+                # 3) only plants (and rocks) left
+
+            # count critters
+            critterCount = Counter([critter[1] for critter in self.dict.values() if (critter[1] != 'Rock')]) # used to have this too:  & (critter[1] != 'Plant')
+
+            #every 100 years, print the critter count (also print in the first year)
+            if (self.year == 1) | ((self.year + 1) % 100 == 0):
+                speciesCount = Counter([critter[0] for critter in self.dict.values() if (critter[1] != 'Rock')]) # used to have this too:  & (critter[1] != 'Plant')
+                print('Year ' + str(self.year) + ': ' + str(speciesCount))
+
+            # check ending criteria
+            if (len(critterCount.keys()) < 1) | (sum(critterCount.values()) > 10000) | (all([key in ['Plant', 'Rock'] for key in critterCount.keys()])):
+                # if everything is dead
+                if (len(critterCount.keys()) < 1) | (all([key in ['Plant', 'Rock'] for key in critterCount.keys()])):
+                    print('ITS A DEAD DEAD WORLD. Year ' + str(self.year))
+                    # log the year the world ended
+                    self.crakeStats[1] = self.year
+                # if the world is too big
+                if sum(critterCount.values()) > 10000:
+                    print('THE CUP OVERFLOWETH. Year ' + str(self.year))
+                    self.crakeStats[1] = 500 #'MAXLIFE50K'
+                    # if there were no extinctions, set firstExt to MAX too
+                    if self.crakeStats[0] == 1:
+                        self.crakeStats[0] = 500 #'MAXLIFE50K'
+
+                # save the stats to csv       
+                paramDF = pd.DataFrame(self.paramStats, columns = self.paramCols)
+                paramDF.to_csv('testData/ARCHIVES/paramStats-' + self.id + '.csv', index=False)
+                plotDF.to_csv('testData/ARCHIVES/plotDF-' + self.id + '.csv', index=False)
+
+                # return year the world ended (and the first extinction)
+                print(self.crakeStats)
+                return(self.crakeStats)
+
+            ###########################
+            # START NEXT YEAR (OR...) #
+            ###########################
+        
+        ####################################
+        # IF IT RAN ALL THE WAY THROUGH... #
+        ####################################
+        # save the stats to csv      
+        paramDF = pd.DataFrame(self.paramStats, columns = self.paramCols)
+        paramDF.to_csv('testData/ARCHIVES/paramStats-' + self.id + '.csv', index=False)
+        plotDF.to_csv('testData/ARCHIVES/plotDF-' + self.id + '.csv', index=False)
+
+        # if there were no extinctions, set firstExt to this year
+        if self.crakeStats[0] == 1:
+            self.crakeStats[0] = self.year
+        # set end of world to this year
+        self.crakeStats[1] = self.year
+        # return year the world ended (and the first extinction)
+        print(self.crakeStats)
+        return self.crakeStats
+
+
+
+    #######################################
+    # FUNCTION TO ACTUALLY RUN THE WORLD ## --- OLD ----
+    #######################################
+
+    def silentTime(self, number, endOnExtinction = False, yearlyPrinting = False, saveYearStats = False):
 
         # set the number of species in the world
         biomeCount = len(set([critter[0] for critter in self.dict.values() if critter[1] != 'Plant']))
@@ -252,14 +425,10 @@ class World:
                         break
 
             # IF AN ENDING CRITERIA IS SATISFIED, END THE WORLD 
-                
-                # 2a) if endOnOverflow==True: more than 10,000 critters total
-                # 2b) if endOnOverflow==False: the RAREST species has more than 1,500 critters
+                # 1) no critters left
+                # 2) more than 10,000 critters (just gets slow, so we end it)
                 # 3) only plants (and rocks) left
-            if (len(critterCount.keys()) < 1) | \
-                ((endOnOverflow==True)&(sum(critterCount.values()) > 10000)) | \
-                ((endOnOverflow==False)&(min(critterCount.values()) > 1500)) | \
-                (all([key in ['Plant', 'Rock'] for key in critterCount.keys()])):
+            if (len(critterCount.keys()) < 1) | (sum(critterCount.values()) > 10000) | (all([key in ['Plant', 'Rock'] for key in critterCount.keys()])):
                 # if everything is dead
                 if (len(critterCount.keys()) < 1) | (all([key in ['Plant', 'Rock'] for key in critterCount.keys()])):
                     print('ITS A DEAD DEAD WORLD. Year ' + str(self.year))
@@ -268,13 +437,15 @@ class World:
                 # if the world is too big
                 if sum(critterCount.values()) > 10000:
                     print('THE CUP OVERFLOWETH. Year ' + str(self.year))
-                    self.crakeStats[1] = number #'MAXLIFE50K'
+                    self.crakeStats[1] = 500 #'MAXLIFE50K'
                     # if there were no extinctions, set firstExt to MAX too
                     if self.crakeStats[0] == 1:
-                        self.crakeStats[0] = number #'MAXLIFE50K'
+                        self.crakeStats[0] = 500 #'MAXLIFE50K'
 
                 if saveYearStats == True:
                     # save the stats to csv       
+                    yearsDF = pd.DataFrame(self.yearStats, columns = ['year', 'critterCount', 'species'])
+                    yearsDF.to_csv('testData/YearStats/YearStats-' + self.id + '.csv', index=False)
                     paramDF = pd.DataFrame(self.paramStats, columns = self.paramCols)
                     paramDF.to_csv('testData/YearStats/paramStats-' + self.id + '.csv', index=False)
 
@@ -286,11 +457,11 @@ class World:
         #########
         # IF IT RAN ALL THE WAY THROUGH...
         #########
-        if saveYearStats == True:
-            # save the stats to csv       
-            paramDF = pd.DataFrame(self.paramStats, columns = self.paramCols)
-            paramDF.to_csv('testData/YearStats/paramStats-' + self.id + '.csv', index=False)
-
+        # save the stats to csv      
+        yearsDF = pd.DataFrame(self.yearStats, columns = ['year', 'critterCount', 'species'])
+        yearsDF.to_csv('testData/YearStats/YearStats-' + self.id + '.csv', index=False)
+        paramDF = pd.DataFrame(self.paramStats, columns = self.paramCols)
+        paramDF.to_csv('testData/YearStats/paramStats-' + self.id + '.csv', index=False)
 
         # if there were no extinctions, set firstExt to this year
         if self.crakeStats[0] == 1:

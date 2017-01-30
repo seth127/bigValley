@@ -1,1 +1,0 @@
-http://stackoverflow.com/questions/38962015/10-000-point-3d-scatter-plots-in-python-with-quick-rendering
