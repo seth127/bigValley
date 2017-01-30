@@ -118,9 +118,11 @@ However, as noted earlier, the Random Forest provides a wider range of possible 
 ###Next steps
 There are many directions that this research could go. One obvious example would be to introduce entirely new agents (for instance "super predators" to eat wolves; or perhaps a large, slower-to-reproduce herbivore to coexist with the smaller, faster rabbits). However, if there is to be any real-world gain from this kind of modeling, we must be sure not to introduce too many variables that are beyond our control.
 
-Another interesting approach would be to set up different "continents." This would entail simulating four ecosystems simultaneously, but *far away* from each other on the grid. Eventually, the populations would expand enough to interact with each other. Observing the interactions on these borders of differently-evolved populations would be fascinating.
+Another interesting approach would be to set up different "continents." This would entail simulating four ecosystems simultaneously, but *far away* from each other on the grid. Eventually, the populations would expand enough to interact with each other. Observing the interactions on these borders of differently-evolved populations would be fascinating. 
 
 The limit of 500 years per iteration could also be increased. This is perhaps the easiest, and most informative, extension. The limit was imposed partially to control for outliers, but mainly to control computation time. The examples presented here took several weeks to simulate on a fairly small AWS EC2 instance. With more computing power, that limit could be significantly relaxed and more varied and interesting interactions might be observed.
+
+There is a logging system (which is currently *only* turned on for the "max 5,000" runs) which logs the average value of each parameter for *each year of an iteration* as opposed to just the starting value. This could be interesting to examine, in either of the previously mentioned contexts, to see how the creatures "evolve" througout an iteration to see if the parameters actually converge towards an ideal value once the ecosystem truly does become stable.
 
 ### Customize
 For those adventurous souls, feel free to open up the bvLife.py and create some creatures of your own. A ruminant who gets double energy from each plant eaten? A predator that hunts in packs? A carniverous plant that eats low-energy foragers? The only limit is your own imagination...
