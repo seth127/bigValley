@@ -1,4 +1,4 @@
-# python bigValleySimScript.py 3 500 5 random extinct
+# example call: python bigValleySimScript.py 500 5 plot
 
 import sys
 import os
