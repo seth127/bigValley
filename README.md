@@ -8,6 +8,8 @@ Big Valley is a little simulated ecosystem with three kinds of critters: grass, 
     2) eats food, if it's next to her, increasing her energy
     3) moves, if there's no food next to her, decreasing her energy
 
+**You can view a visualization of this exercise (in `d3.js`) [here](https://seth127.github.io/bigValley/).** The following README details the code for developing the simulations from scratch. 
+
 Running `bigValleySimScript.py` will run simulations of the world, for your viewing pleasure. By default, the world runs until either rabbits or wolves go extinct, and then restarts. The arguments and parameters are discussed at the bottom of this README in **Brief Documentation**.
 
 A quick starting default to try is `python bigValleySimScript.py 100 3 plot`
